@@ -1159,7 +1159,7 @@ matemenu_tree_entry_get_display_name (MateMenuTreeEntry *entry)
 
   g_return_val_if_fail (entry != NULL, NULL);
 
-  display_name = desktop_entry_get_full_name (entry->desktop_entry);
+  display_name = desktop_entry_get_generic_name (entry->desktop_entry);
   if (!display_name || display_name[0] == '\0')
     display_name = desktop_entry_get_name (entry->desktop_entry);
 
