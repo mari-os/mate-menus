@@ -1,6 +1,6 @@
 AC_PREREQ(2.62)
 
-AC_INIT([mate-menus], [1.20.2], [http://www.mate-desktop.org])
+AC_INIT([mate-menus], [1.22.0], [http://www.mate-desktop.org])
 AC_CONFIG_SRCDIR(libmenu/matemenu-tree.h)
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz check-news])
@@ -35,9 +35,9 @@ AC_STDC_HEADERS
 AC_ARG_PROGRAM
 AM_PROG_LIBTOOL
 
-PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.50.0 gio-2.0 >= 2.50.0)
-AC_SUBST(GLIB_CFLAGS)
-AC_SUBST(GLIB_LIBS)
+PKG_CHECK_MODULES(GIO_UNIX, gio-unix-2.0 >= 2.50.0)
+AC_SUBST(GIO_UNIX_CFLAGS)
+AC_SUBST(GIO_UNIX_LIBS)
 
 MATE_COMPILE_WARNINGS(yes)
 
@@ -69,25 +69,6 @@ else
 fi
 AC_SUBST(DEBUG_CFLAGS)
 
-AC_ARG_ENABLE(python,
-              [AC_HELP_STRING([--enable-python],
-                              [build python bindings])],
-              [enable_python=$enableval],
-              [enable_python=yes])
-
-# Detect if we can build Python bindings (need python and python headers)
-if test "x$enable_python" = "xyes" ; then
-	AM_PATH_PYTHON(2.7)
-	PKG_CHECK_MODULES([PYTHON], [python-${PYTHON_VERSION}], [have_python=yes], [have_python=no])
-else
-	have_python=no
-fi
-AC_SUBST(PYTHON_LIBS)
-AC_SUBST(PYTHON_CFLAGS)
-
-AM_CONDITIONAL(HAVE_PYTHON, test x$have_python = xyes)
-
-
 GOBJECT_INTROSPECTION_CHECK([0.6.7])
 
 AC_OUTPUT([
@@ -98,7 +79,6 @@ libmenu/libmate-menu-uninstalled.pc
 layout/Makefile
 desktop-directories/Makefile
 util/Makefile
-python/Makefile
 po/Makefile.in
 ])
 
@@ -125,7 +105,6 @@ echo "
         Use *_DISABLE_DEPRECATED:     ${enable_deprecation_flags}
 
         Turn on debugging:            ${enable_debug}
-        Build python bindings:        ${have_python}
         Build introspection support:  ${found_introspection}
 
 "

@@ -5,7 +5,7 @@
 # 
 # Translators:
 # Stefano Karapetsas <stefano@karapetsas.com>, 2018
-# Микола Ткач <znadibnyk@gmail.com>, 2018
+# Микола Ткач <chistomov@gmail.com>, 2018
 # Evolve32 <evolve32@yandex.ru>, 2018
 # Шаповалов Анатолій Романович <elrond.716.smith@gmail.com>, 2018
 # 
@@ -14,8 +14,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MATE Desktop Environment\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-03-17 10:00+0100\n"
-"PO-Revision-Date: 2018-03-11 19:01+0000\n"
+"POT-Creation-Date: 2018-12-20 14:55+0100\n"
+"PO-Revision-Date: 2018-03-11 19:02+0000\n"
 "Last-Translator: Шаповалов Анатолій Романович <elrond.716.smith@gmail.com>, 2018\n"
 "Language-Team: Ukrainian (https://www.transifex.com/mate/teams/13566/uk/)\n"
 "MIME-Version: 1.0\n"
@@ -86,7 +86,7 @@ msgstr "Параметри, що впливають на зовнішній ви
 
 #: ../desktop-directories/mate-network.directory.in.h:1
 msgid "Internet"
-msgstr "Інтернет"
+msgstr "Тенета"
 
 #: ../desktop-directories/mate-network.directory.in.h:2
 msgid "Programs for Internet access such as web and email"
