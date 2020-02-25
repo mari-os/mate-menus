@@ -1,6 +1,6 @@
 AC_PREREQ(2.62)
 
-AC_INIT([mate-menus], [1.22.1], [http://www.mate-desktop.org])
+AC_INIT([mate-menus], [1.24.0], [https://mate-desktop.org])
 AC_CONFIG_SRCDIR(libmenu/matemenu-tree.h)
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz check-news])
@@ -22,13 +22,13 @@ MATE_MAINTAINER_MODE_DEFINES
 LIB_MENU_LT_VERSION=6:9:4
 AC_SUBST(LIB_MENU_LT_VERSION)
 
+AM_GNU_GETTEXT_VERSION([0.19.8])
+AM_GNU_GETTEXT_REQUIRE_VERSION([0.19.8])
+AM_GNU_GETTEXT([external])
+
 GETTEXT_PACKAGE=mate-menus
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Name of default gettext domain])
 AC_SUBST(GETTEXT_PACKAGE)
-
-AM_GLIB_GNU_GETTEXT
-
-IT_PROG_INTLTOOL([0.40.0])
 
 AC_PROG_CC
 AC_STDC_HEADERS
@@ -101,6 +101,7 @@ echo "
         source code location:         ${srcdir}
         compiler:                     ${CC}
         cflags:                       ${CFLAGS}
+        Warning flags:                ${WARN_CFLAGS}
         Maintainer mode:              ${USE_MAINTAINER_MODE}
         Use *_DISABLE_DEPRECATED:     ${enable_deprecation_flags}
 
