@@ -54,7 +54,7 @@ Development files for mate-menus
 %_sysconfdir/xdg/menus/mate-preferences-categories.menu
 %_sysconfdir/xdg/menus/mate-applications.menu
 %_sysconfdir/xdg/menus/mate-settings.menu
-%_datadir/mate-menus
+#_datadir/mate-menus
 %_datadir/mate/desktop-directories
 
 %files -n libmate-menus
