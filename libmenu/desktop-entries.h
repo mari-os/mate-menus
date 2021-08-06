@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2002 - 2004 Red Hat, Inc.
+ * Copyright (C) 2012-2021 MATE Developers
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +67,7 @@ void desktop_entry_set_unref(DesktopEntrySet* set);
 
 void desktop_entry_set_add_entry(DesktopEntrySet* set, DesktopEntry* entry, const char* file_id);
 DesktopEntry* desktop_entry_set_lookup(DesktopEntrySet* set, const char* file_id);
-int desktop_entry_set_get_count(DesktopEntrySet* set);
+guint desktop_entry_set_get_count (DesktopEntrySet *set);
 
 void desktop_entry_set_union(DesktopEntrySet* set, DesktopEntrySet* with);
 void desktop_entry_set_intersection(DesktopEntrySet* set, DesktopEntrySet* with);

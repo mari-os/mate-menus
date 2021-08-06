@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2002 - 2004 Red Hat, Inc.
+ * Copyright (C) 2012-2021 MATE Developers
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -398,8 +399,8 @@ static gboolean cached_dir_remove_subdir(CachedDir* dir, const char* basename)
     {
       subdir->deleted = TRUE;
 
-      cached_dir_unref (subdir);
       dir->subdirs = g_slist_remove (dir->subdirs, subdir);
+      cached_dir_unref (subdir);
 
       return TRUE;
     }
@@ -863,7 +864,7 @@ typedef gboolean (*EntryDirectoryForeachFunc) (EntryDirectory* ed, DesktopEntry*
 static gboolean entry_directory_foreach_recursive(EntryDirectory* ed, CachedDir* cd, GString* relative_path, EntryDirectoryForeachFunc func, DesktopEntrySet* set, gpointer user_data)
 {
   GSList *tmp;
-  int     relative_path_len;
+  gsize   relative_path_len;
 
   if (cd->deleted)
     return TRUE;

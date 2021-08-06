@@ -2,6 +2,7 @@
 
 /*
  * Copyright (C) 2002 - 2004 Red Hat, Inc.
+ * Copyright (C) 2012-2021 MATE Developers
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -998,12 +999,12 @@ menu_layout_values_set (MenuLayoutValues *values,
   if (inline_limit != NULL)
     {
       char *end;
-      int   limit;
+      unsigned long limit;
 
-      limit = strtol (inline_limit, &end, 10);
+      limit = strtoul (inline_limit, &end, 10);
       if (*end == '\0')
 	{
-	  values->inline_limit = limit;
+	  values->inline_limit = (guint) limit;
 	  values->mask |= MENU_LAYOUT_VALUES_INLINE_LIMIT;
 	}
     }
@@ -1142,7 +1143,7 @@ typedef struct
 
 static void set_error (GError             **err,
                        GMarkupParseContext *context,
-                       int                  error_domain,
+                       GQuark               error_domain,
                        int                  error_code,
                        const char          *format,
                        ...) G_GNUC_PRINTF (5, 6);
@@ -1183,7 +1184,7 @@ static GMarkupParser menu_funcs = {
 static void
 set_error (GError              **err,
            GMarkupParseContext  *context,
-           int                   error_domain,
+           GQuark                error_domain,
            int                   error_code,
            const char           *format,
            ...)
@@ -2174,7 +2175,7 @@ end_element_handler (GMarkupParseContext  *context,
 
 static gboolean
 all_whitespace (const char *text,
-                int         text_len)
+                gsize       text_len)
 {
   const char *p;
   const char *end;
@@ -2354,7 +2355,7 @@ menu_layout_load (const char  *filename,
   error = NULL;
   if (!g_markup_parse_context_parse (context,
                                      text,
-                                     length,
+                                     (gssize) length,
                                      &error))
     goto out;
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2003, 2004 Red Hat, Inc.
+ * Copyright (C) 2012-2021 MATE Developers
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,6 +48,17 @@ enum {
   PROP_FLAGS
 };
 
+typedef enum
+{
+  OBJECT_DRAWER,
+  OBJECT_MENU,
+  OBJECT_LAUNCHER,
+  OBJECT_APPLET,
+  OBJECT_ACTION,
+  OBJECT_MENU_BAR,
+  OBJECT_SEPARATOR,
+} ObjectType;
+
 /* Signals */
 enum
 {
@@ -64,7 +76,7 @@ struct _MateMenuTree
   char *non_prefixed_basename;
   char *path;
   char *canonical_path;
-
+  GPtrArray *collection_applet;
   MateMenuTreeFlags flags;
 
   GSList *menu_file_monitors;
@@ -75,6 +87,7 @@ struct _MateMenuTree
 
   guint canonical : 1;
   guint loaded    : 1;
+  GSettings  *settings;
 };
 
 G_DEFINE_TYPE (MateMenuTree, matemenu_tree, G_TYPE_OBJECT)
@@ -100,37 +113,37 @@ struct MateMenuTreeIter
 
 struct MateMenuTreeDirectory
 {
-	MateMenuTreeItem item;
+  MateMenuTreeItem  item;
 
-	DesktopEntry *directory_entry;
-	char         *name;
+  DesktopEntry     *directory_entry;
+  char             *name;
 
-	GSList *entries;
-	GSList *subdirs;
+  GSList           *entries;
+  GSList           *subdirs;
 
-	MenuLayoutValues  default_layout_values;
-	GSList           *default_layout_info;
-	GSList           *layout_info;
-	GSList           *contents;
+  MenuLayoutValues  default_layout_values;
+  GSList           *default_layout_info;
+  GSList           *layout_info;
+  GSList           *contents;
 
-  guint only_unallocated : 1;
-  guint is_nodisplay : 1;
-  guint layout_pending_separator : 1;
-  guint preprocessed : 1;
+  guint             only_unallocated         : 1;
+  guint             is_nodisplay             : 1;
+  guint             layout_pending_separator : 1;
+  guint             preprocessed             : 1;
 
-	/* 16 bits should be more than enough; G_MAXUINT16 means no inline header */
-	guint will_inline_header : 16;
+  /* 16 bits should be more than enough; G_MAXUINT16 means no inline header */
+  guint             will_inline_header       : 16;
 };
 
 struct MateMenuTreeEntry
 {
-  MateMenuTreeItem item;
+  MateMenuTreeItem  item;
 
-  DesktopEntry *desktop_entry;
-  char         *desktop_file_id;
+  DesktopEntry     *desktop_entry;
+  char             *desktop_file_id;
 
-  guint is_excluded : 1;
-  guint is_unallocated : 1;
+  guint             is_excluded    : 1;
+  guint             is_unallocated : 1;
 };
 
 struct MateMenuTreeSeparator
@@ -166,6 +179,10 @@ static void      matemenu_tree_force_recanonicalize (MateMenuTree       *tree);
 static void      matemenu_tree_invoke_monitors      (MateMenuTree       *tree);
 
 static void matemenu_tree_item_unref_and_unset_parent (gpointer itemp);
+
+static void collection_applet_changed (GSettings    *settings,
+                                       gchar        *key,
+                                       MateMenuTree *self);
 
 typedef enum
 {
@@ -619,14 +636,107 @@ matemenu_tree_finalize (GObject *object)
 
   g_hash_table_destroy (tree->entries_by_id);
   tree->entries_by_id = NULL;
+  if (tree->collection_applet != NULL)
+  {
+    g_ptr_array_foreach (tree->collection_applet, (GFunc) g_free, NULL);
+    g_ptr_array_free (tree->collection_applet, TRUE);
+    tree->collection_applet = NULL;
+  }
+  g_signal_handlers_disconnect_by_func (tree->settings,
+                                        G_CALLBACK (collection_applet_changed),
+                                        tree);
 
+  g_object_unref (tree->settings);
   G_OBJECT_CLASS (matemenu_tree_parent_class)->finalize (object);
+}
+
+static void
+load_object (char         *id,
+             MateMenuTree *self)
+{
+  ObjectType   object_type;
+  char        *object_path;
+  GSettings   *settings;
+
+  object_path = g_strdup_printf ("/org/mate/panel/objects/%s/", id);
+  settings = g_settings_new_with_path ("org.mate.panel.object", object_path);
+
+  object_type = g_settings_get_enum (settings, "object-type");
+  if (object_type == OBJECT_LAUNCHER)
+  {
+    char *location;
+    char *desktop_name;
+
+    if (self->collection_applet == NULL)
+      self->collection_applet = g_ptr_array_new ();
+
+    location = g_settings_get_string (settings, "launcher-location");
+    desktop_name = g_path_get_basename (location);
+    if (strstr (desktop_name, "-1.") != NULL )
+    {
+      char **str;
+
+      str = g_strsplit (desktop_name, "-1.", -1);
+      g_free (desktop_name);
+      desktop_name = g_strdup_printf ("%s.%s", str[0], str[1]);
+      g_strfreev (str);
+    }
+    g_ptr_array_add (self->collection_applet, desktop_name);
+    g_free (location);
+  }
+  g_free (object_path);
+  g_object_unref (settings);
+}
+
+static gboolean
+emit_changed_signal (gpointer data)
+{
+  MateMenuTree *self = data;
+  matemenu_tree_force_rebuild (self);
+  matemenu_tree_invoke_monitors (self);
+
+  return FALSE;
+}
+
+static void
+get_panel_collection_applet (MateMenuTree *self)
+{
+  gchar **list;
+  guint   i;
+
+  list = g_settings_get_strv (self->settings, "object-id-list");
+  for (i = 0; list[i]; i++)
+  {
+    load_object (list[i], self);
+  }
+  g_strfreev (list);
+}
+
+static void
+collection_applet_changed (GSettings    *settings,
+                           gchar        *key,
+                           MateMenuTree *self)
+{
+  if (self->collection_applet != NULL)
+  {
+    g_ptr_array_foreach (self->collection_applet, (GFunc) g_free, NULL);
+    g_ptr_array_free (self->collection_applet, TRUE);
+    self->collection_applet = NULL;
+  }
+  get_panel_collection_applet (self);
+  g_idle_add (emit_changed_signal, (gpointer)self);
 }
 
 static void
 matemenu_tree_init (MateMenuTree *self)
 {
   self->entries_by_id = g_hash_table_new (g_str_hash, g_str_equal);
+  self->collection_applet = NULL;
+  self->settings = g_settings_new ("org.mate.panel");
+  get_panel_collection_applet (self);
+  g_signal_connect (self->settings, "changed::object-id-list",
+                    G_CALLBACK (collection_applet_changed),
+                    self);
 }
 
 static void
@@ -777,7 +887,7 @@ find_path (MateMenuTreeDirectory *directory,
   slash = strchr (path, G_DIR_SEPARATOR);
   if (slash)
     {
-      name = freeme = g_strndup (path, slash - path);
+      name = freeme = g_strndup (path, (gsize)(slash - path));
       path = slash + 1;
     }
   else
@@ -2431,8 +2541,8 @@ add_menu_for_legacy_dir (MenuLayoutNode *parent,
       GString        *subdir_path;
       GString        *subdir_relative;
       GSList         *tmp;
-      int             legacy_dir_len;
-      int             relative_path_len;
+      size_t          legacy_dir_len;
+      size_t          relative_path_len;
 
       menu = menu_layout_node_new (MENU_LAYOUT_NODE_MENU);
       menu_layout_node_append_child (parent, menu);
@@ -2905,7 +3015,7 @@ find_submenu (MenuLayoutNode *layout,
   slash = strchr (path, G_DIR_SEPARATOR);
   if (slash != NULL)
     {
-      name = g_strndup (path, slash - path);
+      name = g_strndup (path, (gsize)(slash - path));
       next_path = slash + 1;
       if (*next_path == '\0')
         next_path = NULL;
@@ -3135,6 +3245,15 @@ get_by_category_foreach (const char               *file_id,
 }
 
 static void
+get_by_desktop_foreach (const char               *file_id,
+                        DesktopEntry             *entry,
+                        GetByCategoryForeachData *data)
+{
+  if (g_strcmp0 (file_id, data->category) == 0)
+    desktop_entry_set_add_entry (data->set, entry, file_id);
+}
+
+static void
 get_by_category (DesktopEntrySet *entry_pool,
 		 DesktopEntrySet *set,
 		 const char      *category)
@@ -3145,8 +3264,23 @@ get_by_category (DesktopEntrySet *entry_pool,
   data.category = category;
 
   desktop_entry_set_foreach (entry_pool,
-			     (DesktopEntrySetForeachFunc) get_by_category_foreach,
-			     &data);
+                             (DesktopEntrySetForeachFunc) get_by_category_foreach,
+                             &data);
+}
+
+static void
+get_by_desktop (DesktopEntrySet *entry_pool,
+                DesktopEntrySet *set,
+                const char      *desktop_name)
+{
+  GetByCategoryForeachData data;
+
+  data.set      = set;
+  data.category = desktop_name;
+
+  desktop_entry_set_foreach (entry_pool,
+                             (DesktopEntrySetForeachFunc) get_by_desktop_foreach,
+                             &data);
 }
 
 static DesktopEntrySet *
@@ -3307,7 +3441,7 @@ process_include_rules (MenuLayoutNode  *layout,
   if (set == NULL)
     set = desktop_entry_set_new (); /* create an empty set */
 
-  menu_verbose ("Matched %d entries\n", desktop_entry_set_get_count (set));
+  menu_verbose ("Matched %u entries\n", desktop_entry_set_get_count (set));
 
   return set;
 }
@@ -3487,7 +3621,7 @@ process_layout (MateMenuTree          *tree,
              */
             MenuLayoutNode *rule;
 
-	    menu_verbose ("Processing <Include> (%d entries)\n",
+	    menu_verbose ("Processing <Include> (%u entries)\n",
 			  desktop_entry_set_get_count (entries));
 
             rule = menu_layout_node_get_children (layout_iter);
@@ -3508,7 +3642,7 @@ process_layout (MateMenuTree          *tree,
                 rule = menu_layout_node_get_next (rule);
               }
 
-	    menu_verbose ("Processed <Include> (%d entries)\n",
+	    menu_verbose ("Processed <Include> (%u entries)\n",
 			  desktop_entry_set_get_count (entries));
           }
           break;
@@ -3521,7 +3655,7 @@ process_layout (MateMenuTree          *tree,
              */
             MenuLayoutNode *rule;
 
-	    menu_verbose ("Processing <Exclude> (%d entries)\n",
+	    menu_verbose ("Processing <Exclude> (%u entries)\n",
 			  desktop_entry_set_get_count (entries));
 
             rule = menu_layout_node_get_children (layout_iter);
@@ -3541,7 +3675,7 @@ process_layout (MateMenuTree          *tree,
                 rule = menu_layout_node_get_next (rule);
               }
 
-	    menu_verbose ("Processed <Exclude> (%d entries)\n",
+	    menu_verbose ("Processed <Exclude> (%u entries)\n",
 			  desktop_entry_set_get_count (entries));
           }
           break;
@@ -3620,7 +3754,7 @@ process_layout (MateMenuTree          *tree,
 
   desktop_entry_set_unref (entry_pool);
 
-  directory->only_unallocated = only_unallocated;
+  directory->only_unallocated = only_unallocated != FALSE;
 
   if (!directory->only_unallocated)
     desktop_entry_set_union (allocated, allocated_set);
@@ -3657,6 +3791,15 @@ process_layout (MateMenuTree          *tree,
       matemenu_tree_item_unref (directory);
       return NULL;
     }
+  if (tree->collection_applet && !g_strcmp0 (directory->name, "Collection"))
+    {
+      guint i;
+      for (i = 0; i < tree->collection_applet->len; i++)
+      {
+        const char *desktop_name = g_ptr_array_index (tree->collection_applet, i);
+        get_by_desktop (entry_pool, entries, desktop_name);
+      }
+    }
 
   desktop_entry_set_foreach (entries,
                              (DesktopEntrySetForeachFunc) entries_listify_foreach,
@@ -3679,7 +3822,7 @@ process_layout (MateMenuTree          *tree,
       set_default_layout_values (directory, subdir);
 
       tmp = tmp->next;
-   }
+    }
 
   tmp = directory->entries;
   while (tmp != NULL)
@@ -3979,7 +4122,7 @@ preprocess_layout_info_subdir_helper (MateMenuTree          *tree,
                * higher than that (would be crazy), we just consider it's
                * unlimited */
               if (layout_values->inline_limit < G_MAXUINT16)
-                subdir->will_inline_header = layout_values->inline_limit;
+                subdir->will_inline_header = (guint16) layout_values->inline_limit;
               else
                 subdir->will_inline_header = 0;
             }

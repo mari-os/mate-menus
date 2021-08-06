@@ -1,6 +1,6 @@
 AC_PREREQ(2.62)
 
-AC_INIT([mate-menus], [1.24.1], [https://mate-desktop.org])
+AC_INIT([mate-menus], [1.26.0], [https://mate-desktop.org])
 AC_CONFIG_SRCDIR(libmenu/matemenu-tree.h)
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz check-news])
@@ -10,6 +10,8 @@ AC_CONFIG_HEADERS(config.h)
 
 AM_MAINTAINER_MODE
 MATE_MAINTAINER_MODE_DEFINES
+MATE_DEBUG_CHECK([no])
+MATE_COMPILE_WARNINGS
 
 # Before making a release, the LT_VERSION string should be modified.
 # The string is of the form C:R:A.
@@ -22,11 +24,11 @@ MATE_MAINTAINER_MODE_DEFINES
 LIB_MENU_LT_VERSION=6:9:4
 AC_SUBST(LIB_MENU_LT_VERSION)
 
-AM_GNU_GETTEXT_VERSION([0.19.8])
-AM_GNU_GETTEXT_REQUIRE_VERSION([0.19.8])
 AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.19.8])
+AM_CONDITIONAL([USE_NLS], [test "x${USE_NLS}" = "xyes"])
 
-GETTEXT_PACKAGE=mate-menus
+GETTEXT_PACKAGE=AC_PACKAGE_NAME
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Name of default gettext domain])
 AC_SUBST(GETTEXT_PACKAGE)
 
@@ -39,8 +41,6 @@ PKG_CHECK_MODULES(GIO_UNIX, gio-unix-2.0 >= 2.50.0)
 AC_SUBST(GIO_UNIX_CFLAGS)
 AC_SUBST(GIO_UNIX_LIBS)
 
-MATE_COMPILE_WARNINGS(yes)
-
 AC_ARG_ENABLE(deprecation_flags,
               [AC_HELP_STRING([--enable-deprecation-flags],
                               [use *_DISABLE_DEPRECATED flags @<:@default=no@:>@])],,
@@ -51,20 +51,16 @@ if test "x$enable_deprecation_flags" = "xyes"; then
    AC_SUBST(DISABLE_DEPRECATED_CFLAGS)
 fi
 
-dnl --enable-debug=(yes|minimum|no)
-AC_ARG_ENABLE(debug,
-              [AC_HELP_STRING([--enable-debug],
-                              [turn on debugging @<:@default=minimum@:>@])],,
-              [enable_debug=minimum])
-if test "$enable_debug" = "yes"; then
+dnl ---------------------------------------------------------------------------
+dnl - logging
+dnl ---------------------------------------------------------------------------
+if test "$ax_enable_debug" = "yes"; then
   DEBUG_CFLAGS="-DG_ENABLE_DEBUG"
 else
-  if test "x$enable_debug" = "xno"; then
+  if test "x$ax_enable_debug" = "xno"; then
     DEBUG_CFLAGS="-DG_DISABLE_ASSERT -DG_DISABLE_CHECKS"
   else
     DEBUG_CFLAGS=""
-    # make sure we have the right string for the configure summary
-    enable_debug="minimum"
   fi
 fi
 AC_SUBST(DEBUG_CFLAGS)
@@ -105,7 +101,8 @@ echo "
         Maintainer mode:              ${USE_MAINTAINER_MODE}
         Use *_DISABLE_DEPRECATED:     ${enable_deprecation_flags}
 
-        Turn on debugging:            ${enable_debug}
+        Turn on debugging:            ${ax_enable_debug}
         Build introspection support:  ${found_introspection}
+        Native Language support:      ${USE_NLS}
 
 "
