@@ -1,6 +1,6 @@
 AC_PREREQ(2.62)
 
-AC_INIT([mate-menus], [1.26.0], [https://mate-desktop.org])
+AC_INIT([mate-menus], [1.26.1], [https://mate-desktop.org])
 AC_CONFIG_SRCDIR(libmenu/matemenu-tree.h)
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz check-news])
@@ -40,6 +40,15 @@ AM_PROG_LIBTOOL
 PKG_CHECK_MODULES(GIO_UNIX, gio-unix-2.0 >= 2.50.0)
 AC_SUBST(GIO_UNIX_CFLAGS)
 AC_SUBST(GIO_UNIX_LIBS)
+
+AC_ARG_ENABLE(collection,
+  AC_HELP_STRING([--enable-collection],
+                 [enable collection menu entry]),,
+  enable_collection=yes)
+
+if test x$enable_collection = xyes; then
+    AC_DEFINE(WITH_COLLECTION,1,[Build with collection menu entry support])
+fi
 
 AC_ARG_ENABLE(deprecation_flags,
               [AC_HELP_STRING([--enable-deprecation-flags],
@@ -102,6 +111,7 @@ echo "
         Use *_DISABLE_DEPRECATED:     ${enable_deprecation_flags}
 
         Turn on debugging:            ${ax_enable_debug}
+        Collection menu entry:        ${enable_collection}
         Build introspection support:  ${found_introspection}
         Native Language support:      ${USE_NLS}
 
