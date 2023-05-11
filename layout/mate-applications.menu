@@ -138,7 +138,7 @@
     </Include>
   </Menu>   <!-- End System Tools -->
 
-  <!-- Collection-->
+  <!--
   <Menu>
     <Name>Collection</Name>
     <Directory>mate-collection.directory</Directory>
@@ -148,7 +148,7 @@
         <Not><Category>Settings</Category></Not>
       </And>
     </Include>
-  </Menu>   <!-- End Collection Tools -->
+  </Menu>   -->
   <!-- Other -->
   <Menu>
     <Name>Other</Name>
