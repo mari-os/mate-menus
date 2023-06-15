@@ -1,5 +1,5 @@
 Name: mate-menus
-Version: 1.26.1
+Version: 1.27.0
 Release: alt1
 Epoch: 1
 Summary: Displays menus for MATE Desktop
@@ -68,6 +68,9 @@ Development files for mate-menus
 %_datadir/gir-1.0/MateMenu-2.0.gir
 
 %changelog
+* Wed Jun 14 2023 Andrey Sokolov <keremet@altlinux.org> 1:1.27.0-alt1
+- 1.27.0
+
 * Thu May 11 2023 Valery Inozemtsev <shrek@altlinux.ru> 1:1.26.1-alt1
 - 1.26.1
 
